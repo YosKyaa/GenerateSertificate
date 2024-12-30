@@ -1,0 +1,40 @@
+function onFormSubmit(e) {
+  // Retrieve data from form submission
+  const formResponses = e.response.getItemResponses();
+  let email = formResponses[0].getResponse();  // Retrieve email from the form
+  let nama_lengkap = formResponses[2].getResponse();   // Retrieve nama_lengkap from the form
+  
+  var file = DriveApp.getFileById("Isi Document ID"); // Replace with the actual document ID
+  var copy = file.makeCopy(nama_lengkap + " - Certificate");  // Create a copy of the document for the participant
+  var copiedTemplateId = copy.getId();
+  let doc = DocumentApp.openById(copiedTemplateId);
+  var body = doc.getBody();
+  
+  // Replace placeholder {{Name}} with the participant's nama_lengkap
+  body.replaceText('{{Name}}', nama_lengkap);
+
+  // Save the document
+  doc.saveAndClose();
+
+  // Save the certificate as PDF
+  var pdf = doc.getAs('application/pdf');
+  
+  // Add a 1-second delay before sending the email
+  Utilities.sleep(1000);  // 1-second delay
+
+  // Send email using simple HTML format, with official sender nama_lengkap
+  GmailApp.sendEmail(email, "Certificate of Participation in Committee", "", {
+    htmlBody: `<p>Dear ${nama_lengkap},</p>
+               <p>Thank you for your valuable contribution as a committee member. Please find your certificate of participation attached.</p>
+               <p>Best regards,<br>
+               MEDIA HxA Festival Team</p>
+               <p><em>Developed by RISTEK-HIMATIF</em></p>`,
+    attachments: [pdf],
+    name: "MEDIA HxA Festival",  // Official sender nama
+    replyTo: "himatif.19@jgu.ac.id",  // Set reply-to to "noreply"
+    from: "himatif.19@jgu.ac.id"      // Ensure the sender email is "noreply" and domain is authenticated
+  });
+
+  // Delete the copied document after sending
+  DriveApp.getFileById(copiedTemplateId).setTrashed(true);
+}
